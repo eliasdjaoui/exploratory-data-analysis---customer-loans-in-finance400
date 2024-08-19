@@ -156,7 +156,7 @@ def main() -> None:
 
     This function performs the following steps:
     1. Load database credentials
-    2. Initialize the database connector
+    2. Initialize the database connecto2r
     3. Fetch data from the 'loan_payments' table
     4. Save the fetched data to a CSV file
     5. Load the data back from the CSV file

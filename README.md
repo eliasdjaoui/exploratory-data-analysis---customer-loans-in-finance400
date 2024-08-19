@@ -8,7 +8,7 @@ File structure of the project
 License information
 
 
-### Loan Data Dictionary
+### Loan Data Dictionary - remember that these are currently the old data types, remember to provide a column with the new datatypes
 
 | **Field**                     | **Description**                                                                                                                                      | **Type**    |
 |-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
@@ -54,3 +54,33 @@ License information
 | `application_type`             | Indicates whether the loan is an individual application or a joint application with two co-borrowers                                                 | `string`    |
 
 
+1. Columns with High Null Percentage (> 50%)
+Columns:
+
+mths_since_last_record (88.60%)
+mths_since_last_major_derog (86.17%)
+next_payment_date (60.13%)
+mths_since_last_delinq (57.17%)
+
+We deal with these columns by dropping them.
+
+2. Columns with Moderate Null Percentage (5-10%)
+Columns:
+
+int_rate (9.53%)
+term (8.80%)
+funded_amount (5.54%)
+Approach:
+
+Imputation: Given that these columns have a moderate percentage of null values, imputation is likely the best approach. You can impute int_rate with the mean or median interest rate. For term, you might fill in the mode (most common loan term). funded_amount could be imputed with the mean, median, or even a predicted value based on other available data.
+
+3. Columns with Low Null Percentage (< 5%)
+Columns:
+
+employment_length (3.91%)
+last_payment_date (0.13%)
+collections_12_mths_ex_med (0.09%)
+last_credit_pull_date (0.01%)
+Approach:
+
+Imputation: Since these columns have very few missing values, imputation is straightforward. For employment_length, you might fill in with the median or mode. For last_payment_date and last_credit_pull_date, consider using the mode or some forward/backward fill. The collections_12_mths_ex_med might be filled with 0 if it represents the count of collections and nulls could indicate no collections.

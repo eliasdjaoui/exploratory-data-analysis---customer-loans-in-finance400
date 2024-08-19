@@ -4,13 +4,17 @@ from scipy import stats
 from data_info import DataFrameInfo
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 class DataTransformation:
     """
     Handling the task of data conversion in the loans dataset
     """
     def __init__(self, df):
-        self.df = df.copy(deep=TRUE)  # Create a copy to avoid modifying the original dataframe
+        self.df = df.copy  # Create a copy to avoid modifying the original dataframe
+
+    def remove_whitespace(self): # First lets strip the whitespace
+     return self.df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
     def datetime_date_column(self, date_column):
         """
@@ -77,6 +81,7 @@ class DataTransformation:
         self.df[column] = self.df[column].astype(float)
         return self.df
 
+
 class DataFrameTransform:
     """
     A class for handling missing values in a DataFrame, including identification,
@@ -95,13 +100,13 @@ class DataFrameTransform:
             pandas.DataFrame: A DataFrame with columns for null count and percentage.
         """
         null_count = self.df.isnull().sum()
-        null_percentage = 100 * self.df.isnull().sum() / len(self.df)
+        null_percentage = 100 * null_count / len(self.df)
         missing_value_df = pd.DataFrame({'null_count': null_count,
                                          'null_percentage': null_percentage})
         missing_value_df = missing_value_df[missing_value_df['null_count'] > 0].sort_values('null_percentage', ascending=False)
         return missing_value_df
     
-    def handle_missing_values(self, threshold_percentage=5, method='impute'):
+    def handle_missing_values(self, threshold_percentage=10, method='impute'):
         """
         Handles missing values based on the percentage of missing data and specified method.
         
@@ -167,10 +172,48 @@ class DataFrameTransform:
         plt.title('Comparison of NULL Values: Original vs Current')
         plt.xlabel('Columns')
         plt.ylabel('Number of NULL Values')
-        plt.xticks(rotation=90)
+        plt.xticks(rotation=10)
         plt.tight_layout()
         plt.show()
-    
+
+    def remove_highly_correlated_columns(self, threshold=0.9):
+        """
+        Identifies and removes highly correlated columns from the DataFrame.
+
+        Args:
+            threshold (float): The correlation threshold above which columns will be considered highly correlated.
+                            Default is 0.9.
+        
+        Returns:
+            pandas.DataFrame: The updated DataFrame with highly correlated columns removed.
+        """
+        # Convert non-numeric columns to numeric, coercing errors to NaN
+        df_numeric = self.df.apply(pd.to_numeric, errors='coerce')
+        
+        # Drop columns that were not converted to numeric (all NaNs)
+        df_numeric = df_numeric.dropna(axis=1, how='all')
+        
+        # Step 0: Compute the correlation matrix
+        corr_matrix = df_numeric.corr()
+
+        # Step 2: Visualize the correlation matrix
+        plt.figure(figsize=(15, 15))
+        sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f')
+        plt.title('Correlation Matrix')
+        plt.show()
+
+        # Step 3: Identify highly correlated columns
+        # Find pairs of columns with correlation above the threshold
+        upper_tri = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+        to_drop = [column for column in upper_tri.columns if any(upper_tri[column].abs() > threshold)]
+
+        print(f"Columns to drop due to high correlation (>{threshold}): {to_drop}")
+
+        # Step 4: Remove the highly correlated columns from the original DataFrame
+        self.df = self.df.drop(columns=to_drop)
+        
+        return self.df
+
     def save_dataframe(self, filename):
         """
         Saves the current DataFrame to a CSV file.
@@ -179,8 +222,9 @@ class DataFrameTransform:
             filename (str): The name of the file to save the DataFrame to.
         """
         self.df.to_csv(filename, index=False)
-        print(f"DataFrame saved to {filename}")
-    
+        print(f"DataFrame saved to {filename}") 
+
+
 
 if __name__ == "__main__":
     df_transform = DataFrameTransform(pd.read_csv('loan_payments.csv'))
@@ -194,5 +238,8 @@ if __name__ == "__main__":
         # To handle missing values with custom settings
     # updated_df = df_transform.handle_missing_values(threshold_percentage=10, method='remove')
 
-    #Show plot of missing values
-    df_transform.visualize_null_removal()
+    df_transform.identify_missing_values()
+    df_transform.handle_missing_values()
+    df_transform.impute_column
+    df_transform.save_dataframe("Clean_data.csv")
+    df_transform.remove_highly_correlated_columns(threshold=0.9)

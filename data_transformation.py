@@ -11,12 +11,12 @@ class DataTransformation:
     Handling the task of data conversion in the loans dataset
     """
     def __init__(self, df):
-        self.df = df.copy  # Create a copy to avoid modifying the original dataframe
+        self.df = df.copy()  # Create a copy to avoid modifying the original dataframe
 
     def remove_whitespace(self): # First lets strip the whitespace
-     return self.df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+     return self.df.map(lambda x: x.strip() if isinstance(x, str) else x)
 
-    def datetime_date_column(self, date_column):
+    def datetime_date_column(self, issue_date, earliest_credit_line, last_payment_date):
         """
         Convert pandas object dtype into a pandas datetime dtype.
         
@@ -26,10 +26,12 @@ class DataTransformation:
         Returns:
             pandas.DataFrame: Updated dataframe with converted date column.
         """
-        self.df[date_column] = pd.to_datetime(self.df[date_column], dayfirst=True) # dayfirst=True is not strict, but will prefer to parse with day first
+        self.df[issue_date] = pd.to_datetime(self.df[issue_date], dayfirst=True)# dayfirst=True is not strict, but will prefer to parse with day first
+        self.df[earliest_credit_line] = pd.to_datetime(self.df[earliest_credit_line], dayfirst=True)
+        self.df[last_payment_date] = pd.to_datetime(self.df[last_payment_date], dayfirst=True) 
         return self.df
 
-    def float_term(self, term_column):
+    def float_term(self, term):
         """
         Convert the 'term' column to float format. 
         
@@ -39,10 +41,10 @@ class DataTransformation:
         Returns:
             pandas.DataFrame: Updated dataframe with converted term column.
         """
-        self.df[term_column] = self.df[term_column].str.extract(r'(\d+)', expand=False).astype(float)
+        self.df[term] = self.df[term].str.extract(r'(\d+)', expand=False).astype(float)
         return self.df
 
-    def categorical_cat_column(self, cat_column):
+    def categorical_cat_column(self, grade, sub_grade, home_ownership, loan_status):
         """
         Converting column to categorical dtype.
         
@@ -52,7 +54,10 @@ class DataTransformation:
         Returns:
             pandas.DataFrame: Updated dataframe with converted categorical column.
         """
-        self.df[cat_column] = self.df[cat_column].astype('category')
+        self.df[grade] = self.df[grade].astype('category')
+        self.df[sub_grade] = self.df[sub_grade].astype('category')
+        self.df[home_ownership] = self.df[home_ownership].astype('category')
+        self.df[loan_status] = self.df[loan_status].astype('category')
         return self.df
 
     def categorical_numerical(self, category_column):
@@ -227,7 +232,9 @@ class DataFrameTransform:
 
 
 if __name__ == "__main__":
-    df_transform = DataFrameTransform(pd.read_csv('loan_payments.csv'))
+    df_sort = DataTransformation(pd.read_csv('loan_payments.csv'))
+    df_transform = DataFrameTransform(df_sort.df)
+    
 
         # To see the missing value statistics
         # print(df_transform.identify_missing_values())
@@ -238,8 +245,16 @@ if __name__ == "__main__":
         # To handle missing values with custom settings
     # updated_df = df_transform.handle_missing_values(threshold_percentage=10, method='remove')
 
+    
+    df_sort.remove_whitespace()
+    df_sort.datetime_date_column('issue_date','earliest_credit_line','last_payment_date')
+    df_sort.float_term('term')
+    df_sort.categorical_cat_column('grade', 'sub_grade', 'home_ownership', 'loan_status')
+    # df_sort.categorical_numerical()
+    # df_sort.convert_to_float()
+    
     df_transform.identify_missing_values()
     df_transform.handle_missing_values()
     df_transform.impute_column
     df_transform.save_dataframe("Clean_data.csv")
-    df_transform.remove_highly_correlated_columns(threshold=0.9)
+    # df_transform.remove_highly_correlated_columns(threshold=0.9)
